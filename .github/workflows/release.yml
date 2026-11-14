@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the tag matches the plugin version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          header=$(sed -n 's/^ \* Version:[[:space:]]*\([0-9.]*\).*/\1/p' atsmtp-plugin/at-smtp.php)
+          constant=$(sed -n "s/^define( 'ATSMTP_VERSION', '\([0-9.]*\)' );/\1/p" atsmtp-plugin/at-smtp.php)
+          echo "tag=$tag header=$header constant=$constant"
+          [ "$tag" = "$header" ] && [ "$tag" = "$constant" ] || { echo "::error::Tag v$tag does not match plugin version ($header / $constant)"; exit 1; }
+
+      - name: Build zips
+        run: |
+          # The plugin installs into wp-content/plugins/at-smtp.
+          stage="${RUNNER_TEMP}/stage"
+          rm -rf "$stage" && mkdir -p "$stage"
+          cp -r atsmtp-plugin "$stage/at-smtp"
+          (cd "$stage" && zip -r "$GITHUB_WORKSPACE/at-smtp.zip" at-smtp -x '*.DS_Store' '*Thumbs.db')
+          # Shared module: unpacked into the shared directory next to the config file.
+          (cd atsmtp-shared && zip -r "$GITHUB_WORKSPACE/atsmtp-shared.zip" antispam -x '*.DS_Store' '*Thumbs.db')
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            at-smtp.zip
+            atsmtp-shared.zip
+          generate_release_notes: true

@@ -1,0 +1,12 @@
+.DS_Store
+Thumbs.db
+*.zip
+php_errors.log
+
+# Real configs, own lists and runtime data must never be committed.
+/config*.php
+/*.json
+/atsmtp-shared/*.php
+/atsmtp-shared/*.json
+/atsmtp-shared/lists/
+/atsmtp-shared/data/

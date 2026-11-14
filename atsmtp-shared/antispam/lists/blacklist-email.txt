@@ -1,0 +1,8 @@
+# Чёрный список email по умолчанию: адрес целиком или домен (с @ или без) на строку.
+# Домен блокирует и все его поддомены.
+# Этот файл заменяется при обновлении модуля. Свои адреса добавляйте в lists/blacklist-email.txt
+# рядом с файлом настроек (например, /home/user/atsmtp-shared/lists/blacklist-email.txt).
+# Примеры:
+# spammer@example.com
+# @spam-domain.example
+# spam-domain.example
