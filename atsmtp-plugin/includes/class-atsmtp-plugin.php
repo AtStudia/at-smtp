@@ -14,7 +14,7 @@ class ATSMTP_Plugin {
 	/** @var self|null */
 	private static $instance = null;
 
-	/** @var bool Apply SMTP even when disabled (test email from settings page). */
+	/** @var bool Test email from the settings page: capture the SMTP session log. */
 	private $testing = false;
 
 	/** @var string */
@@ -50,7 +50,6 @@ class ATSMTP_Plugin {
 			add_action( 'admin_menu', array( $this, 'admin_menu' ) );
 			add_action( 'admin_notices', array( $this, 'admin_notices' ) );
 			add_action( 'admin_post_atsmtp_save', array( $this, 'handle_save' ) );
-			add_action( 'admin_post_atsmtp_toggle', array( $this, 'handle_toggle' ) );
 			add_action( 'admin_post_atsmtp_test', array( $this, 'handle_test' ) );
 			add_action( 'admin_post_atsmtp_antispam_toggle', array( $this, 'handle_antispam_toggle' ) );
 			add_action( 'admin_post_atsmtp_antispam_clear', array( $this, 'handle_antispam_clear' ) );
@@ -70,7 +69,6 @@ class ATSMTP_Plugin {
 	 */
 	public static function defaults() {
 		return array(
-			'enabled'     => 0,
 			'config_path' => '',
 		);
 	}
@@ -83,8 +81,7 @@ class ATSMTP_Plugin {
 		if ( ! is_array( $saved ) ) {
 			$saved = array();
 		}
-		$out                = array_merge( self::defaults(), $saved );
-		$out['enabled']     = empty( $out['enabled'] ) ? 0 : 1;
+		$out                = array_intersect_key( array_merge( self::defaults(), $saved ), self::defaults() );
 		$out['config_path'] = (string) $out['config_path'];
 		return $out;
 	}
@@ -104,14 +101,11 @@ class ATSMTP_Plugin {
 	}
 
 	/**
-	 * Config to apply to the current email, or null when interception is off or the file is invalid.
+	 * Config to apply to the current email, or null when the file is not loaded (mail then goes the WordPress way).
 	 *
 	 * @return array<string, mixed>|null
 	 */
 	private function active_config() {
-		if ( ! $this->testing && ! self::settings()['enabled'] ) {
-			return null;
-		}
 		return self::current_config()['config'];
 	}
 
@@ -275,9 +269,6 @@ class ATSMTP_Plugin {
 		if ( $screen && 'settings_page_' . self::PAGE === $screen->id ) {
 			return;
 		}
-		if ( ! self::settings()['enabled'] ) {
-			return;
-		}
 		$loaded = self::current_config();
 		if ( null !== $loaded['config'] ) {
 			return;
@@ -311,13 +302,6 @@ class ATSMTP_Plugin {
 		$path = isset( $_POST['config_path'] ) ? sanitize_text_field( wp_unslash( $_POST['config_path'] ) ) : '';
 		self::save_settings( array( 'config_path' => $path ) );
 		$this->redirect( 'saved' );
-	}
-
-	public function handle_toggle() {
-		$this->verify_request( 'atsmtp_toggle' );
-		$enable = ! self::settings()['enabled'];
-		self::save_settings( array( 'enabled' => $enable ? 1 : 0 ) );
-		$this->redirect( $enable ? 'enabled' : 'disabled' );
 	}
 
 	public function handle_antispam_toggle() {

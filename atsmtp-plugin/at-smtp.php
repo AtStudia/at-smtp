@@ -3,7 +3,7 @@
  * Plugin Name: AT SMTP
  * Plugin URI:  https://github.com/AtStudia/at-smtp
  * Description: Перехватывает всю почту сайта (wp_mail) и отправляет её через SMTP по единому файлу настроек, расположенному вне папки сайта. Один файл — для всех сайтов хостинга. Общая защита форм от спама.
- * Version:     1.2.0
+ * Version:     1.3.0
  * Author:      AT
  * Text Domain: at-smtp
  * Requires at least: 5.8
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ATSMTP_VERSION', '1.2.0' );
+define( 'ATSMTP_VERSION', '1.3.0' );
 
 if ( ! defined( 'ATSMTP_GITHUB_REPO' ) ) {
 	define( 'ATSMTP_GITHUB_REPO', 'AtStudia/at-smtp' );

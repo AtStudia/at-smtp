@@ -17,8 +17,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $atsmtp_messages = array(
 	'saved'        => array( 'success', __( 'Путь к файлу настроек сохранён.', 'at-smtp' ) ),
-	'enabled'      => array( 'success', __( 'AT SMTP включён: вся почта сайта отправляется через SMTP.', 'at-smtp' ) ),
-	'disabled'     => array( 'warning', __( 'AT SMTP выключен: почта отправляется стандартным способом WordPress.', 'at-smtp' ) ),
 	'bad_email'    => array( 'error', __( 'Укажите корректный адрес для тестового письма.', 'at-smtp' ) ),
 	'config_error' => array( 'error', __( 'Тестовое письмо не отправлено: файл настроек не загружен.', 'at-smtp' ) ),
 	'test_sent'    => array( 'success', __( 'Тестовое письмо отправлено.', 'at-smtp' ) ),
@@ -29,10 +27,9 @@ $atsmtp_messages = array(
 	'updates_checked'  => array( 'success', __( 'Проверка обновлений выполнена.', 'at-smtp' ) ),
 	'updates_error'    => array( 'error', __( 'Не удалось проверить обновления на GitHub.', 'at-smtp' ) ),
 );
-$atsmtp_config  = $loaded['config'];
-$atsmtp_enabled = (bool) $settings['enabled'];
-$atsmtp_path    = (string) $settings['config_path'];
-$atsmtp_yes_no  = static function ( $value ) {
+$atsmtp_config = $loaded['config'];
+$atsmtp_path   = (string) $settings['config_path'];
+$atsmtp_yes_no = static function ( $value ) {
 	return $value ? __( 'да', 'at-smtp' ) : __( 'нет', 'at-smtp' );
 };
 ?>
@@ -56,23 +53,23 @@ $atsmtp_yes_no  = static function ( $value ) {
 	</style>
 
 	<div class="atsmtp-card">
-		<h2><?php esc_html_e( 'Перехват почты', 'at-smtp' ); ?></h2>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<input type="hidden" name="action" value="atsmtp_toggle">
-			<?php wp_nonce_field( 'atsmtp_toggle' ); ?>
-			<span class="atsmtp-status <?php echo $atsmtp_enabled ? 'atsmtp-on' : 'atsmtp-off'; ?>">
-				<?php echo $atsmtp_enabled ? esc_html__( 'Включено', 'at-smtp' ) : esc_html__( 'Выключено', 'at-smtp' ); ?>
-			</span>
-			<?php
-			if ( $atsmtp_enabled ) {
-				submit_button( __( 'Выключить', 'at-smtp' ), 'secondary', 'submit', false );
-			} else {
-				submit_button( __( 'Включить', 'at-smtp' ), 'primary', 'submit', false );
-			}
-			?>
-		</form>
-		<?php if ( $atsmtp_enabled && null === $atsmtp_config ) : ?>
-			<p class="atsmtp-err"><?php esc_html_e( 'Плагин включён, но файл настроек не загружен — письма отправляются стандартным способом WordPress.', 'at-smtp' ); ?></p>
+		<h2><?php esc_html_e( 'Отправка почты', 'at-smtp' ); ?></h2>
+		<?php if ( null !== $atsmtp_config ) : ?>
+			<p>
+				<span class="atsmtp-status atsmtp-on"><?php esc_html_e( 'Через SMTP', 'at-smtp' ); ?></span>
+				<?php
+				/* translators: %s: SMTP host and port */
+				printf( esc_html__( 'Вся почта сайта отправляется через %s.', 'at-smtp' ), '<code>' . esc_html( $atsmtp_config['host'] . ':' . $atsmtp_config['port'] ) . '</code>' );
+				?>
+			</p>
+		<?php else : ?>
+			<p>
+				<span class="atsmtp-status atsmtp-off"><?php esc_html_e( 'Стандартно', 'at-smtp' ); ?></span>
+				<?php esc_html_e( 'Файл настроек не загружен — письма отправляются стандартным способом WordPress.', 'at-smtp' ); ?>
+			</p>
+			<?php if ( '' === $atsmtp_path ) : ?>
+				<p class="atsmtp-err"><?php esc_html_e( 'Укажите путь к файлу настроек ниже.', 'at-smtp' ); ?></p>
+			<?php endif; ?>
 		<?php endif; ?>
 	</div>
 
@@ -126,7 +123,7 @@ $atsmtp_yes_no  = static function ( $value ) {
 
 	<div class="atsmtp-card">
 		<h2><?php esc_html_e( 'Тестовое письмо', 'at-smtp' ); ?></h2>
-		<p class="description"><?php esc_html_e( 'Отправляется через SMTP из файла настроек, даже если перехват выключен, — так можно проверить настройки перед включением.', 'at-smtp' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Отправляется через SMTP из файла настроек. Показывает журнал SMTP-сессии — помогает найти причину, если почта не уходит.', 'at-smtp' ); ?></p>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="atsmtp_test">
 			<?php wp_nonce_field( 'atsmtp_test' ); ?>
