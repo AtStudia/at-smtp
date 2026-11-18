@@ -12,7 +12,7 @@ class Module {
 	/** Contract version checked by the AT SMTP plugin. */
 	const API = 1;
 
-	const VERSION = '1.1.0';
+	const VERSION = '1.2.0';
 
 	const FIELD_HP    = 'atsmtp_hp';
 	const FIELD_TOKEN = 'atsmtp_t';
@@ -39,7 +39,13 @@ class Module {
 	public function __construct( array $settings, array $env ) {
 		$this->settings = self::normalize( $settings );
 		$this->dir      = dirname( __DIR__ );
-		$this->storage  = new Storage( isset( $env['data_dir'] ) ? (string) $env['data_dir'] : '' );
+		$this->storage  = new Storage(
+			isset( $env['data_dir'] ) ? (string) $env['data_dir'] : '',
+			array(
+				'file_log' => $this->settings['file_log'],
+				'log_max'  => $this->settings['log_max'],
+			)
+		);
 		// Shipped defaults are replaced on module update; own lists live next to the config file and are kept.
 		$this->checker = new Checker( $this->settings, $this->storage, array( $this->dir . '/lists', dirname( $this->dir ) . '/lists' ) );
 	}
@@ -90,6 +96,8 @@ class Module {
 			'min_seconds'      => 3,
 			'max_links'        => 2,
 			'require_cyrillic' => false,
+			'file_log'         => true,  // Писать spam-ГГГГ-ММ.log в data/.
+			'log_max'          => 200,   // Лимит записей в базе WordPress сайта. 0 — не хранить.
 			'rate_limit'       => array(
 				'max'     => 5,
 				'minutes' => 10,
@@ -118,6 +126,8 @@ class Module {
 		$out['min_seconds']      = max( 0, (int) $out['min_seconds'] );
 		$out['max_links']        = max( 0, (int) $out['max_links'] );
 		$out['require_cyrillic'] = (bool) $out['require_cyrillic'];
+		$out['file_log']         = (bool) $out['file_log'];
+		$out['log_max']          = max( 0, (int) $out['log_max'] );
 		$out['ip_header']        = strtoupper( trim( (string) $out['ip_header'] ) );
 		$out['block_message']    = '' !== trim( (string) $out['block_message'] ) ? (string) $out['block_message'] : $d['block_message'];
 
@@ -194,6 +204,8 @@ class Module {
 			'mode'          => $this->settings['mode'],
 			'shared'        => $this->storage->is_shared(),
 			'data_dir'      => $this->storage->data_dir(),
+			'file_log'      => $this->settings['file_log'],
+			'log_max'       => $this->settings['log_max'],
 			'captcha'       => $this->settings['captcha']['enabled'],
 			'captcha_ready' => $this->settings['captcha']['active'],
 			'rate_limit'    => $this->settings['rate_limit'],

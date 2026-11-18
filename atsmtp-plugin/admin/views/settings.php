@@ -192,13 +192,38 @@ $atsmtp_yes_no = static function ( $value ) {
 						</td>
 					</tr>
 					<tr>
-						<td><?php esc_html_e( 'Журнал и лимит по IP', 'at-smtp' ); ?></td>
+						<td><?php esc_html_e( 'Каталог data/ (лимит по IP)', 'at-smtp' ); ?></td>
 						<td>
 							<?php if ( $atsmtp_as_status['shared'] ) : ?>
-								<?php esc_html_e( 'общие для всех сайтов:', 'at-smtp' ); ?> <code><?php echo esc_html( $atsmtp_as_status['data_dir'] ); ?></code>
+								<?php esc_html_e( 'доступен:', 'at-smtp' ); ?> <code><?php echo esc_html( $atsmtp_as_status['data_dir'] ); ?></code>
 							<?php else : ?>
-								<?php esc_html_e( 'только этот сайт — нет права записи в', 'at-smtp' ); ?> <code><?php echo esc_html( $atsmtp_as_status['data_dir'] ); ?></code>
+								<?php esc_html_e( 'нет права записи в', 'at-smtp' ); ?> <code><?php echo esc_html( $atsmtp_as_status['data_dir'] ); ?></code>
 							<?php endif; ?>
+						</td>
+					</tr>
+					<tr>
+						<td><?php esc_html_e( 'Файл spam-ГГГГ-ММ.log', 'at-smtp' ); ?></td>
+						<td>
+							<?php
+							if ( empty( $atsmtp_as_status['file_log'] ) ) {
+								esc_html_e( 'выключен в настройках', 'at-smtp' );
+							} elseif ( $atsmtp_as_status['shared'] ) {
+								esc_html_e( 'пишется', 'at-smtp' );
+							} else {
+								esc_html_e( 'включён, но каталог data/ недоступен', 'at-smtp' );
+							}
+							?>
+						</td>
+					</tr>
+					<tr>
+						<td><?php esc_html_e( 'Журнал в базе сайта', 'at-smtp' ); ?></td>
+						<td>
+							<?php
+							echo isset( $atsmtp_as_status['log_max'] ) && (int) $atsmtp_as_status['log_max'] > 0
+								/* translators: %d: max entries */
+								? esc_html( sprintf( __( 'до %d записей', 'at-smtp' ), (int) $atsmtp_as_status['log_max'] ) )
+								: esc_html__( 'выключен (log_max = 0)', 'at-smtp' );
+							?>
 						</td>
 					</tr>
 					<tr>

@@ -10,19 +10,27 @@ defined( 'ABSPATH' ) || exit;
 class Storage {
 
 	const LOG_OPTION = 'atsmtp_spam_log';
-	const LOG_MAX    = 200;
 
 	/** @var string */
 	private $dir;
+
+	/** @var bool Write spam-YYYY-MM.log into data/. */
+	private $file_log;
+
+	/** @var int Max entries in the site's WordPress option. 0 — do not store in the database. */
+	private $log_max;
 
 	/** @var bool|null */
 	private $shared = null;
 
 	/**
-	 * @param string $dir Shared data directory.
+	 * @param string               $dir  Shared data directory.
+	 * @param array<string, mixed> $opts file_log, log_max.
 	 */
-	public function __construct( $dir ) {
-		$this->dir = '' !== $dir ? untrailingslashit( wp_normalize_path( $dir ) ) : '';
+	public function __construct( $dir, array $opts = array() ) {
+		$this->dir      = '' !== $dir ? untrailingslashit( wp_normalize_path( $dir ) ) : '';
+		$this->file_log = ! array_key_exists( 'file_log', $opts ) || (bool) $opts['file_log'];
+		$this->log_max  = array_key_exists( 'log_max', $opts ) ? max( 0, (int) $opts['log_max'] ) : 200;
 	}
 
 	/**
@@ -33,7 +41,21 @@ class Storage {
 	}
 
 	/**
-	 * Whether all sites can share counters and the log through the data directory.
+	 * @return bool
+	 */
+	public function file_log_enabled() {
+		return $this->file_log;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function log_max() {
+		return $this->log_max;
+	}
+
+	/**
+	 * Whether all sites can share counters (and optionally the file log) through the data directory.
 	 *
 	 * @return bool
 	 */
@@ -136,11 +158,15 @@ class Storage {
 	 * @param array<string, mixed> $entry Log entry.
 	 */
 	public function log( array $entry ) {
-		$log = $this->local_log();
-		array_unshift( $log, $entry );
-		update_option( self::LOG_OPTION, array_slice( $log, 0, self::LOG_MAX ), false );
+		if ( $this->log_max > 0 ) {
+			$log = $this->local_log();
+			array_unshift( $log, $entry );
+			update_option( self::LOG_OPTION, array_slice( $log, 0, $this->log_max ), false );
+		} else {
+			delete_option( self::LOG_OPTION );
+		}
 
-		if ( $this->is_shared() ) {
+		if ( $this->file_log && $this->is_shared() ) {
 			$file = $this->dir . '/spam-' . gmdate( 'Y-m' ) . '.log';
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions
 			if ( false !== @file_put_contents( $file, wp_json_encode( $entry, JSON_UNESCAPED_UNICODE ) . "\n", FILE_APPEND | LOCK_EX ) ) {
@@ -153,8 +179,18 @@ class Storage {
 	 * @return array<int, array<string, mixed>>
 	 */
 	public function local_log() {
+		if ( $this->log_max <= 0 ) {
+			return array();
+		}
 		$log = get_option( self::LOG_OPTION, array() );
-		return is_array( $log ) ? $log : array();
+		if ( ! is_array( $log ) ) {
+			return array();
+		}
+		if ( count( $log ) > $this->log_max ) {
+			$log = array_slice( $log, 0, $this->log_max );
+			update_option( self::LOG_OPTION, $log, false );
+		}
+		return $log;
 	}
 
 	public function clear_local_log() {
